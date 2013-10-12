@@ -12,7 +12,7 @@ INSTALL_PREFIX := /usr
 PATH           := $(PATH):$(CURDIR)/$(BUILD_DIR)/$(FLEXDLL_DIR)
 
 ifeq ($(MINGW_HOST),i686-w64-mingw32)
-BUILD_CC       := gcc -m32
+BUILD_CC       := gcc
 ARCH           := i386
 MINGW_SYSTEM   := mingw
 else

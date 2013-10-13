@@ -8,7 +8,7 @@ OTHER_LIBS     := win32unix str num dynlink bigarray systhreads win32graph
 BUILD_DIR      := build
 BINARY_DIR     := $(CURDIR)/binary
 INSTALL_DIR    := # install at root
-INSTALL_PREFIX := /usr
+INSTALL_PREFIX := /usr/i686-w64-mingw32
 PATH           := $(PATH):$(CURDIR)/$(BUILD_DIR)/$(FLEXDLL_DIR)
 
 ifeq ($(MINGW_HOST),i686-w64-mingw32)

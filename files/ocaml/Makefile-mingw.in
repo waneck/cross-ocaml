@@ -46,6 +46,7 @@ NATIVECCLIBS=
 ARCMD=@mingw_host@-ar
 ASM=@mingw_host@-as
 ASM_CFI_SUPPORTED=false
+WITH_FRAME_POINTERS=false
 ASPP=@mingw_host@-gcc -c
 ASPPPROFFLAGS=-DPROFILING
 PROFILING=prof

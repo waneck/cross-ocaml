@@ -22,24 +22,17 @@ Index: mingw-ocaml/build/ocaml/otherlibs/bigarray/Makefile
 ===================================================================
 --- mingw-ocaml.orig/build/ocaml/otherlibs/bigarray/Makefile	2013-10-13 08:35:04.000000000 -0300
 +++ mingw-ocaml/build/ocaml/otherlibs/bigarray/Makefile	2013-10-13 16:35:21.621686891 -0300
-@@ -12,13 +12,13 @@
+@@ -12,8 +12,8 @@
  #########################################################################
  
  LIBNAME=bigarray
 -EXTRACFLAGS=-I../unix -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
 -EXTRACAMLFLAGS=-I ../unix
--COBJS=bigarray_stubs.$(O) mmap_unix.$(O)
-+EXTRACFLAGS=-I../win32unix -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
-+EXTRACAMLFLAGS=-I ../win32unix
-+COBJS=bigarray_stubs.$(O) mmap_win32.$(O)
++EXTRACFLAGS=-I../win32unix -I../unix -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
++EXTRACAMLFLAGS=-I ../win32unix -I ../unix
+ COBJS=bigarray_stubs.$(O) mmap_unix.$(O)
  CAMLOBJS=bigarray.cmo
  HEADERS=bigarray.h
- 
--include ../Makefile
-+include ../Makefile.nt
- 
- depend:
- 	gcc -MM $(CFLAGS) *.c > .depend
 Index: mingw-ocaml/build/ocaml/myocamlbuild.ml
 ===================================================================
 --- mingw-ocaml.orig/build/ocaml/myocamlbuild.ml	2013-10-13 08:35:04.000000000 -0300

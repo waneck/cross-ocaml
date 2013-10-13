@@ -4,9 +4,9 @@ in the Sys module.
 
 Index: mingw-ocaml/build/ocaml/utils/config.mlp
 ===================================================================
---- mingw-ocaml.orig/build/ocaml/utils/config.mlp	2013-03-22 13:57:38.268403632 -0500
-+++ mingw-ocaml/build/ocaml/utils/config.mlp	2013-03-22 13:57:38.244415632 -0500
-@@ -86,11 +86,7 @@
+--- mingw-ocaml.orig/build/ocaml/utils/config.mlp	2013-10-13 08:55:10.000000000 -0300
++++ mingw-ocaml/build/ocaml/utils/config.mlp	2013-10-13 08:55:19.000000000 -0300
+@@ -85,11 +85,7 @@
  let ext_lib = "%%EXT_LIB%%"
  let ext_dll = "%%EXT_DLL%%"
  
@@ -27,4 +27,35 @@ Index: mingw-ocaml/build/ocaml/utils/config.mlp
 +  p "os_type" "Win32";
    p "default_executable_name" default_executable_name;
    p_bool "systhread_supported" systhread_supported;
-   flush oc;
+ 
+Index: mingw-ocaml/build/ocaml/byterun/win32.c
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/byterun/win32.c	2013-10-13 08:55:10.000000000 -0300
++++ mingw-ocaml/build/ocaml/byterun/win32.c	2013-10-13 16:35:15.333686888 -0300
+@@ -35,6 +35,26 @@
+ 
+ #include <flexdll.h>
+ 
++/* XXX including <io.h> gets ../byterun/io.h for some reason.
++ * Including the real io.h using the full path fails because of
++ * some strange bug in the system header file itself.  Give up and
++ * just define _finddata_t explicitly here.
++ */
++#ifndef _FSIZE_T_DEFINED
++typedef unsigned long   _fsize_t;
++#define _FSIZE_T_DEFINED
++
++struct _finddata_t
++{
++  unsigned        attrib;
++  time_t          time_create;
++  time_t          time_access;
++  time_t          time_write;
++  _fsize_t        size;
++  char            name[FILENAME_MAX];
++};
++#endif
++
+ #ifndef S_ISREG
+ #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+ #endif

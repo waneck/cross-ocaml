@@ -1,7 +1,7 @@
 Index: mingw-ocaml/build/findlib/src/findlib/Makefile
 ===================================================================
---- mingw-ocaml.orig/build/findlib/src/findlib/Makefile	2013-03-25 07:57:15.116394979 -0500
-+++ mingw-ocaml/build/findlib/src/findlib/Makefile	2013-03-25 07:58:44.399727226 -0500
+--- mingw-ocaml.orig/build/findlib/src/findlib/Makefile	2013-10-13 08:35:04.805672918 -0300
++++ mingw-ocaml/build/findlib/src/findlib/Makefile	2013-10-13 16:21:39.457686493 -0300
 @@ -11,8 +11,8 @@
  
  NAME = findlib

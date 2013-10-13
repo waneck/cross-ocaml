@@ -8,8 +8,8 @@ Index: mingw-ocaml/build/findlib/src/findlib/Makefile
  
 -OCAMLC = ocamlc
 -OCAMLOPT = ocamlopt
-+OCAMLC = ocamlc -I /usr/lib/ocaml/compiler-libs
-+OCAMLOPT = ocamlopt -I /usr/lib/ocaml/compiler-libs
++OCAMLC = ocamlc -I +compiler-libs
++OCAMLOPT = ocamlopt -I +compiler-libs
  OCAMLDEP = ocamldep
  OCAMLLEX = ocamllex
  CAMLP4O =  camlp4 pa_o.cmo pa_op.cmo pr_o.cmo --

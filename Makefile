@@ -229,9 +229,11 @@ stamp-binary-all: stamp-build-findlib
 	  > $(BINARY_DIR)/etc/$(MINGW_HOST)-ocamlfind.conf
 	# Install flexlink binary
 	mkdir -p $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
-	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexlink.exe flexdll_mingw.o flexdll_initer_mingw.o \
-	                                                               flexdll_mingw64.o flexdll_initer_mingw64.o
-	                                                     $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
+	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexlink.exe $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
+	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexdll_mingw.o $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
+	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexdll_initer_mingw.o $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
+	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexdll_mingw64.o $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
+	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexdll_initer_mingw64.o $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
 	# Nothing in /usr/$(MINGW_HOST)/lib/ocaml should 'a priori' be executable except flexlink.exe..
 	find $(BINARY_DIR)$(INSTALL_PREFIX)/$(MINGW_HOST)/lib/ocaml -type f -executable | grep -v flexlink.exe | while read i; do \
 	    chmod -x $$i; done

@@ -30,7 +30,11 @@ stamp-quilt-patches: patches $(BUILD_DIR)
 	touch stamp-quilt-patches
 
 stamp-build-ocaml: stamp-quilt-patches
-	cd build/ocaml && ./configure -host $(CROSS) -cross $(CROSS)- -cc $(BUILD_CC) -prefix $(INSTALL_PREFIX) && make cross
+	cd build/ocaml && ./configure -host $(CROSS) -cross $(CROSS)- -cc $(BUILD_CC) -prefix $(INSTALL_PREFIX) 
+	#copy modified headers configured in a real mac box
+	cp -f files/ocaml/m-darwin11.h build/ocaml/config/m.h
+	cp -f files/ocaml/s-darwin11.h build/ocaml/config/s.h
+	cd build/ocaml && make cross
 	touch stamp-build-ocaml
 
 install: stamp-binary-all

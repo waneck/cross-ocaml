@@ -38,7 +38,7 @@ stamp-build-ocaml: stamp-quilt-patches
 	touch stamp-build-ocaml
 
 install: stamp-binary-all
-	cd build/ocaml && make install
+	cd build/ocaml && make installcross
 
 binary: stamp-binary-all
 

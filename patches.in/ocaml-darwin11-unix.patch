@@ -1,0 +1,36 @@
+Index: mingw-ocaml/build/ocaml/otherlibs/unix/envir.c
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/otherlibs/unix/envir.c	2013-10-13 17:14:38.091227492 -0700
++++ mingw-ocaml/build/ocaml/otherlibs/unix/envir.c	2013-10-13 17:30:04.799222688 -0700
+@@ -15,8 +15,13 @@
+ #include <alloc.h>
+ 
+ #ifndef _WIN32
++#ifdef __APPLE__
++#include <crt_externs.h>
++#define environ (*_NSGetEnviron())
++#else
+ extern char ** environ;
+ #endif
++#endif
+ 
+ CAMLprim value unix_environment(value unit)
+ {
+Index: mingw-ocaml/build/ocaml/otherlibs/unix/execvp.c
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/otherlibs/unix/execvp.c	2013-10-13 17:14:38.091227492 -0700
++++ mingw-ocaml/build/ocaml/otherlibs/unix/execvp.c	2013-10-13 17:30:49.191222457 -0700
+@@ -17,8 +17,13 @@
+ 
+ extern char ** cstringvect();
+ #ifndef _WIN32
++#ifdef __APPLE__
++#include <crt_externs.h>
++#define environ (*_NSGetEnviron())
++#else
+ extern char ** environ;
+ #endif
++#endif
+ 
+ CAMLprim value unix_execvp(value path, value args)
+ {

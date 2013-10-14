@@ -1,0 +1,390 @@
+Index: mingw-ocaml/build/ocaml/configure
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/configure	2013-10-13 17:14:38.107227492 -0700
++++ mingw-ocaml/build/ocaml/configure	2013-10-13 17:15:14.299227305 -0700
+@@ -14,12 +14,13 @@
+ #########################################################################
+ 
+ configure_options="$*"
+-prefix=/usr/local
++prefix=/usr
+ bindir=''
+ libdir=''
+ mandir=''
+ manext=1
+-host_type=unknown
++host_type=arm-linux
++cross=
+ ccoption=''
+ asoption=''
+ asppoption=''
+@@ -60,6 +61,8 @@
+     "") break;;
+     -prefix|--prefix)
+         prefix=$2; shift;;
++    -cross|--cross)
++        cross=$2; shift;;
+     -bindir|--bindir)
+         bindir=$2; shift;;
+     -libdir|--libdir)
+@@ -198,6 +201,9 @@
+   echo "Please specify the correct host type with the -host option"
+   exit 2
+ fi
++if test "$cross"; then
++  host=$(echo $cross | cut -d - -f 1,2,3)
++fi
+ echo "Configuring for a $host ..."
+ 
+ # Do we have gcc?
+@@ -673,6 +679,7 @@
+ model=default
+ system=unknown
+ 
++echo "checking $host"
+ case "$host" in
+   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
+   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
+@@ -810,7 +817,7 @@
+ 
+ if sh ./searchpath ranlib; then
+   echo "ranlib found"
+-  echo "RANLIB=ranlib" >> Makefile
++  echo "RANLIB=${cross}ranlib" >> Makefile
+   echo "RANLIBCMD=ranlib" >> Makefile
+ else
+   echo "ranlib not used"
+@@ -818,7 +825,7 @@
+   echo "RANLIBCMD=" >> Makefile
+ fi
+ 
+-echo "ARCMD=ar" >> Makefile
++echo "ARCMD=${cross}ar" >> Makefile
+ 
+ 
+ # Do #! scripts work?
+@@ -1169,7 +1176,6 @@
+   debugger=""
+ fi
+ 
+-
+ # Determine if system stack overflows can be detected
+ 
+ case "$arch,$system" in
+@@ -1616,6 +1622,7 @@
+ 
+ cclibs="$cclibs $mathlib"
+ 
++echo "CROSS=$cross" >> Makefile
+ echo "BYTECC=$bytecc" >> Makefile
+ echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
+ echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+@@ -1631,20 +1638,20 @@
+ #ml let syslib x = "-l"^x;;
+ 
+ ### How to build a static library
+-MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
+-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
++MKLIB=${cross}ar rc \$(1) \$(2); ${cross}ranlib \$(1)
++#ml let mklib out files opts = Printf.sprintf "${cross}ar rc %s %s %s; ${cross}ranlib %s" out opts files out;;
+ EOF
+ echo "ARCH=$arch" >> Makefile
+ echo "MODEL=$model" >> Makefile
+ echo "SYSTEM=$system" >> Makefile
+-echo "NATIVECC=$nativecc" >> Makefile
++echo "NATIVECC=$cross$nativecc" >> Makefile
+ echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+ echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
+ echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
+ echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
+ echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
+-echo "ASM=$as" >> Makefile
+-echo "ASPP=$aspp" >> Makefile
++echo "ASM=$cross$as" >> Makefile
++echo "ASPP=$cross$aspp" >> Makefile
+ echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
+ echo "PROFILING=$profiling" >> Makefile
+ echo "DYNLINKOPTS=$dllib" >> Makefile
+@@ -1652,7 +1659,7 @@
+ echo "DEBUGGER=$debugger" >> Makefile
+ echo "CC_PROFILE=$cc_profile" >> Makefile
+ echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
+-echo "PARTIALLD=$partialld" >> Makefile
++echo "PARTIALLD=$cross$partialld" >> Makefile
+ echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
+   | sed -e 's/ $/\\ /' >> Makefile
+ echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
+@@ -1669,10 +1676,10 @@
+ echo "TOOLCHAIN=cc" >> Makefile
+ echo "NATDYNLINK=$natdynlink" >> Makefile
+ echo "CMXS=$cmxs" >> Makefile
+-echo "MKEXE=$mkexe" >> Makefile
++echo "MKEXE=$cross$mkexe" >> Makefile
+ echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
+-echo "MKDLL=$mksharedlib" >> Makefile
+-echo "MKMAINDLL=$mkmaindll" >> Makefile
++echo "MKDLL=$cross$mksharedlib" >> Makefile
++echo "MKMAINDLL=$cross$mkmaindll" >> Makefile
+ echo "RUNTIMED=${debugruntime}" >>Makefile
+ echo "CAMLP4=${withcamlp4}" >>Makefile
+ echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
+Index: mingw-ocaml/build/ocaml/Makefile
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/Makefile	2013-10-13 17:14:38.099227492 -0700
++++ mingw-ocaml/build/ocaml/Makefile	2013-10-13 17:16:58.871226762 -0700
+@@ -15,17 +15,18 @@
+ include config/Makefile
+ include stdlib/StdlibModules
+ 
+-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+-COMPFLAGS=-strict-sequence -w +33..39 -warn-error A $(INCLUDES)
++CROSSCC=$(CROSS)$(BYTECC)
++CAMLC=ocamlc.opt -nostdlib -I stdlib
++CAMLOPT=ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
++COMPFLAGS=-strict-sequence -w +33..39 $(INCLUDES)
+ LINKFLAGS=
+ 
+-CAMLYACC=boot/ocamlyacc
++CAMLYACC=ocamlyacc
+ YACCFLAGS=-v
+-CAMLLEX=boot/ocamlrun boot/ocamllex
+-CAMLDEP=boot/ocamlrun tools/ocamldep
++CAMLLEX=ocamllex
++CAMLDEP=ocamldep
+ DEPFLAGS=$(INCLUDES)
+-CAMLRUN=byterun/ocamlrun
++CAMLRUN=ocamlrun
+ SHELL=/bin/sh
+ MKDIR=mkdir -p
+ 
+@@ -260,6 +261,38 @@
+ 	 ocamlbuild.byte $(CAMLP4OUT) $(DEBUGGER) ocamldoc ocamlopt.opt \
+ 	 otherlibrariesopt
+ 
++# Native-code cross-compiler, libraries, and tools
++
++cross: cross-start cross-ocamlc.opt runtimeopt ocamlopt \
++       cross-ocamlopt.opt libraryopt otherlibrariesopt
++
++cross-start:
++	cd tools; $(MAKE) CAMLC=ocamlc.opt ocamlmklib
++	cd stdlib; $(MAKE) RUNTIME= COMPILER=$$(which ocamlc.opt) all
++	@sed -e 's|@compiler@|ocamlc.opt|' \
++	  driver/ocamlcomp.sh.in > ocamlcomp.sh
++	@chmod +x ocamlcomp.sh
++
++cross-ocamlc.opt:
++	$(MAKE) NATIVECC="$(BYTECC)" CAMLC=ocamlc.opt CAMLOPT=ocamlopt.opt ocamlc.opt
++	rm -f asmrun/meta.o asmrun/dynlink.o
++	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
++	  driver/ocamlcomp.sh.in > ocamlcomp.sh
++	@chmod +x ocamlcomp.sh
++
++cross-ocamlopt.opt:
++	@sed -e 's|@compiler@|ocamlopt.opt -nopervasives|' \
++	  driver/ocamlcomp.sh.in > ocamlcomp.sh
++	@chmod +x ocamlcomp.sh
++	$(MAKE) CAMLC=ocamlc.opt CAMLOPT=ocamlopt.opt ocamlopt.opt
++	rm -f $(OPTOBJS:.cmo=.cmx)
++	@sed -e 's|@compiler@|ocamlc.opt|' \
++	  driver/ocamlcomp.sh.in > ocamlcomp.sh
++	@chmod +x ocamlcomp.sh
++	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
++	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
++	@chmod +x ocamlcompopt.sh
++
+ # Installation
+ 
+ COMPLIBDIR=$(LIBDIR)/compiler-libs
+@@ -327,6 +360,18 @@
+ 	cd $(COMPLIBDIR) && $(RANLIB) ocamlcommon.a ocamlbytecomp.a \
+ 	   ocamloptcomp.a
+ 
++# Installation of the cross-compiler
++installcross:
++	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
++	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
++	cd asmrun; $(MAKE) install
++	cd byterun; $(MAKE) -i install
++	ln -sf $(LIBDIR)/caml $(PREFIX)/include
++	cd stdlib; cp *.cmi *.mli *.ml $(LIBDIR); $(MAKE) installopt
++	for i in $(OTHERLIBRARIES); \
++	  do (cd otherlibs/$$i; $(MAKE) -i install; $(MAKE) installopt) || exit $$?; done
++	cp ocamlopt ocamlopt.opt tools/ocamlmklib $(BINDIR)
++
+ clean:: partialclean
+ 
+ # Shared parts of the system
+@@ -344,7 +389,7 @@
+ 	rm -f compilerlibs/ocamlbytecomp.cma
+ 
+ ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+-	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamlc \
++	ocamlc.opt $(LINKFLAGS) -compat-32 -o ocamlc \
+ 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
+ 	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc|' \
+ 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
+@@ -358,7 +403,7 @@
+ 	rm -f compilerlibs/ocamloptcomp.cma
+ 
+ ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+-	$(CAMLC) $(LINKFLAGS) -o ocamlopt \
++	ocamlc.opt $(LINKFLAGS) -o ocamlopt \
+ 	  compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma $(OPTSTART)
+ 	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlopt|' \
+ 	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
+@@ -403,12 +448,12 @@
+ 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+ 	    -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
+ 	    -e 's|%%CCOMPTYPE%%|cc|' \
+-	    -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
+-	    -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
++	    -e 's|%%BYTECC%%|$(CROSSCC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
++	    -e 's|%%NATIVECC%%|$(CROSSCC) $(NATIVECCCOMPOPTS)|' \
+ 	    -e 's|%%PACKLD%%|$(PACKLD)|' \
+ 	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
+ 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
+-	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
++	    -e 's|%%RANLIBCMD%%|$(CROSS)$(RANLIBCMD)|' \
+ 	    -e 's|%%ARCMD%%|$(ARCMD)|' \
+ 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+ 	    -e 's|%%ARCH%%|$(ARCH)|' \
+@@ -514,7 +559,8 @@
+ # The predefined exceptions and primitives
+ 
+ byterun/primitives:
+-	cd byterun; $(MAKE) primitives
++	cd byterun; $(MAKE) BYTECC="$(CROSSCC)" primitives
++	$(MAKE) BYTECC="$(CROSSCC)" 
+ 
+ bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
+ 	(echo 'let builtin_exceptions = [|'; \
+@@ -585,7 +631,7 @@
+ 
+ tools/cvt_emit: tools/cvt_emit.mll
+ 	cd tools; \
+-	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
++	$(MAKE) CAMLC="ocamlc.opt -I ../stdlib" CAMLLEX=ocamllex cvt_emit
+ 
+ # The "expunge" utility
+ 
+@@ -615,10 +661,14 @@
+ # The runtime system for the native-code compiler
+ 
+ runtimeopt: makeruntimeopt
++	if test -f boot/libcamlrun.a; then :; else \
++	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
++	if test -d stdlib/caml; then :; else \
++	  ln -s ../byterun stdlib/caml; fi
+ 	cp asmrun/libasmrun.a stdlib/libasmrun.a
+ 
+ makeruntimeopt:
+-	cd asmrun; $(MAKE) all
++	cd asmrun; $(MAKE) AR=$(AR) all
+ 
+ clean::
+ 	cd asmrun; $(MAKE) clean
+@@ -636,7 +686,14 @@
+ 	cd stdlib; $(MAKE) RUNTIME=../byterun/ocamlrun all
+ 
+ libraryopt:
+-	cd stdlib; $(MAKE) allopt
++	cd byterun; $(MAKE) AR="$(CROSS)ar" RANLIB="$(CROSS)ranlib" BYTECC="$(CROSSCC)" MKEXE="$(CROSSCC)" RUNTIME=ocamlrun COMPILER=$$(which ocamlc) all
++	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
++	cd stdlib; $(MAKE) RUNTIME=ocamlrun COMPILER=$$(which ocamlc) allopt
++	cd stdlib; cp $(LIBFILES) ../boot
++	if test -f boot/libcamlrun.a; then :; else \
++	  ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
++	if test -d stdlib/caml; then :; else \
++	  ln -s ../byterun stdlib/caml; fi
+ 
+ partialclean::
+ 	cd stdlib; $(MAKE) clean
+@@ -704,7 +761,7 @@
+ 
+ otherlibrariesopt:
+ 	for i in $(OTHERLIBRARIES); do \
+-	  (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
++	  (cd otherlibs/$$i; $(MAKE) CC="$(CROSSCC)" BYTECC="$(CROSSCC)" CAMLC="../../ocamlcomp.sh -I ../unix" CAMLRUN= allopt) || exit $$?; \
+ 	done
+ 
+ partialclean::
+Index: mingw-ocaml/build/ocaml/asmrun/Makefile
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/asmrun/Makefile	2013-10-13 17:14:38.075227492 -0700
++++ mingw-ocaml/build/ocaml/asmrun/Makefile	2013-10-13 17:22:35.755225016 -0700
+@@ -37,7 +37,7 @@
+ 
+ libasmrun.a: $(OBJS)
+ 	rm -f libasmrun.a
+-	ar rc libasmrun.a $(OBJS)
++	$(ARCMD) rc libasmrun.a $(OBJS)
+ 	$(RANLIB) libasmrun.a
+ 
+ all-noruntimed:
+@@ -48,7 +48,7 @@
+ 
+ libasmrund.a: $(DOBJS)
+ 	rm -f libasmrund.a
+-	ar rc libasmrund.a $(DOBJS)
++	$(ARCMD) rc libasmrund.a $(DOBJS)
+ 	$(RANLIB) libasmrund.a
+ 
+ all-noprof:
+@@ -57,7 +57,7 @@
+ 
+ libasmrunp.a: $(POBJS)
+ 	rm -f libasmrunp.a
+-	ar rc libasmrunp.a $(POBJS)
++	$(ARCMD) rc libasmrunp.a $(POBJS)
+ 	$(RANLIB) libasmrunp.a
+ 
+ install: install-default install-$(RUNTIMED) install-$(PROFILING)
+@@ -173,7 +173,7 @@
+ .SUFFIXES: .S .d.o .p.o
+ 
+ .S.o:
+-	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S || \
++	$(ASPP) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -c $*.S || \
+ 	{ echo "If your assembler produced syntax errors, it is probably";\
+           echo "unhappy with the preprocessor. Check your assembler, or";\
+           echo "try producing $*.o by hand.";\
+Index: mingw-ocaml/build/ocaml/byterun/Makefile
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/byterun/Makefile	2013-10-13 17:14:38.067227493 -0700
++++ mingw-ocaml/build/ocaml/byterun/Makefile	2013-10-13 17:23:54.459224608 -0700
+@@ -34,11 +34,11 @@
+ 		  prims.o libcamlrund.a $(BYTECCLIBS)
+ 
+ libcamlrun.a: $(OBJS)
+-	ar rc libcamlrun.a $(OBJS)
++	$(ARCMD) rc libcamlrun.a $(OBJS)
+ 	$(RANLIB) libcamlrun.a
+ 
+ libcamlrund.a: $(DOBJS)
+-	ar rc libcamlrund.a $(DOBJS)
++	$(ARCMD) rc libcamlrund.a $(DOBJS)
+ 	$(RANLIB) libcamlrund.a
+ 
+ libcamlrun_shared.so: $(PICOBJS)
+Index: mingw-ocaml/build/ocaml/byterun/Makefile.common
+===================================================================
+--- mingw-ocaml.orig/build/ocaml/byterun/Makefile.common	2013-10-13 17:14:38.067227493 -0700
++++ mingw-ocaml/build/ocaml/byterun/Makefile.common	2013-10-13 17:25:12.243224204 -0700
+@@ -22,13 +22,13 @@
+   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
+   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
+   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
+-  dynlink.o
++  dynlink.o prims.o
+ 
+ PRIMS=\
+   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
+   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
+   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
+-  dynlink.c backtrace.c
++  dynlink.c backtrace.c prims.c
+ 
+ PUBLIC_INCLUDES=\
+   alloc.h callback.h config.h custom.h fail.h hash.h intext.h \

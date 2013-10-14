@@ -1,6 +1,8 @@
-Mingw-ocaml is a set of patch and Makefile that can 
-build an OCaml cross-compiler using the mingw32
-compilation tools. 
+Cross-ocaml is a set of patch and Makefile that can 
+build an OCaml cross-compiler.
+This branch will build a mingw32 cross compiler.
+You may navigate through the branches to see the available
+cross-compilers
 
 You can build cross-compilers that creates native binary
 for windows, both 32 and 64 bits. By native, we mean 
